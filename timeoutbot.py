@@ -73,10 +73,13 @@ selection = [
 
 # Timeout function
 async def timeout_process(m, n):
-    storage[m] = m.roles
-    await m.edit(roles = [])
-    await m.add_roles(n)
-    await client.get_channel(real_timeout_id).send(random.choice(selection))
+    if n not in m.roles:
+        storage[m] = m.roles
+        await m.edit(roles = [])
+        await m.add_roles(n)
+        await client.get_channel(real_timeout_id).send(random.choice(selection))
+        await client.get_channel(real_timeout_id).send('You are here because someone typed your trigger word.')
+        await client.get_channel(real_timeout_id).send('To return to the server, type and post exactly the following: "KEYPHRASE"')
 
 @client.event
 async def on_ready():
@@ -90,6 +93,7 @@ async def on_message(message):
     if muterole in message.author.roles:
         if keyphrase in message.content.casefold():
             await message.author.remove_roles(muterole)
+            print(storage[message.author][1:])
             await message.author.edit(roles = storage[message.author][1:])
             del storage[message.author]
 
@@ -98,17 +102,20 @@ async def on_message(message):
             target_member = gld.get_member(userkeys[key])
             await timeout_process(target_member, muterole)
 
-    if 'aot' in message.content.casefold():
+    if 'nuclearword' in message.content.casefold():
         for member in gld.members:
-            if member != gld.get_member(int(gld.owner_id)):
+            if member != gld.get_member(int(gld.owner_id)) and member.bot == False:
+                print(member)
                 await timeout_process(member, muterole)
+        await client.get_channel(real_timeout_id).send('The nuclear word has been triggered.')
+
+    await client.process_commands(message)
 
 # Echo function
-@timeoutbot.command()
-async def talk(ctx, arg):
-    if ctx.message.author.id == gld.owner_id:
-        channel = client.get_channel('CHANNEL_ID')
-        await channel.send(arg)
+@client.command()
+async def talk(ctx, *, args):
+    if ctx.message.author.id == 'User_ID':
+        await ctx.send(args)
         await ctx.message.delete()
 
 client.run(token)
